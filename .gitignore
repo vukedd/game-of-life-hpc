@@ -1,0 +1,3 @@
+# making sure result files don't end up on github :D
+results/
+*.csv
