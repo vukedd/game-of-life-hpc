@@ -1,4 +1,12 @@
 # making sure result files don't end up on github :D
+
+# Python
 results/
 *.csv
 venv/
+
+
+# Rust
+rust/target/
+rust/**/*.rs.bk
+rust/**/*.rs~
