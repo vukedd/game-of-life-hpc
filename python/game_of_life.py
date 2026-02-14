@@ -87,10 +87,10 @@ class GameOfLife:
                             if self.current_grid[updated_row, updated_col] == 1:
                                 one_count += 1
                     
-                    if (cell_alive and one_count == 2) or one_count == 3:
-                        new_grid[row, col] = 1
-                    else:
-                        new_grid[row, col] = 0
+                if (cell_alive and one_count == 2) or one_count == 3:
+                    new_grid[row, col] = 1
+                else:
+                    new_grid[row, col] = 0
         
         self.current_grid = new_grid
         return self.current_grid
