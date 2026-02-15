@@ -14,36 +14,34 @@ import time
     tasks in parallel with features like prange
 '''
 @njit(parallel=True)
-def update_grid_numba(current_grid, new_grid):
-    rows, cols = current_grid.shape
+def update_grid_numba(grid, scratch_grid):
+    rows, cols = grid.shape
     
     '''
         prange represents a numba feature which provides parallel loop processing
 
         OS-level threads compute chunks of the grid in parallel
     '''
-    for row in prange(rows):
-        for col in range(cols):
-            one_count = 0
-            curr_cell = current_grid[row][col]
-            cell_alive = True if curr_cell == 1 else False
-
-            for i in range(-1, 2):
-                for j in range(-1, 2):
-                    if i == 0 and j == 0:
-                        continue
-                    
-                    r = row + i
-                    c = col + j
-                    
-                    if (r >= 0 and r < rows) and (c >= 0 and c < cols):
-                        if current_grid[r, c] == 1:
-                            one_count += 1
+    for y in prange(rows):
+        y_up = rows - 1 if y == 0 else y - 1
+        y_down = 0 if y == rows - 1 else y + 1
+        
+        for x in range(cols):
+            x_left = cols - 1 if x == 0 else x - 1
+            x_right = 0 if x == cols - 1 else x + 1
             
-            if (cell_alive and one_count == 2) or one_count == 3:
-                new_grid[row, col] = 1
+            one_count = (
+                grid[y_up, x_left]   + grid[y_up, x]   + grid[y_up, x_right] +
+                grid[y, x_left]                        + grid[y, x_right]    +
+                grid[y_down, x_left] + grid[y_down, x] + grid[y_down, x_right]
+            )
+            
+            current_state = grid[y, x]
+            
+            if one_count == 3 or (one_count == 2 and current_state == 1):
+                scratch_grid[y, x] = 1
             else:
-                new_grid[row, col] = 0
+                scratch_grid[y, x] = 0
 
 class GameOfLife:
     def __init__(self, grid):
@@ -63,47 +61,45 @@ class GameOfLife:
                 much faster reads.
         '''
         self.current_grid = np.array(grid, dtype=np.int8)
-    
+        self.scratch_grid = np.zeros_like(self.current_grid)
+
     '''
         sequential implementation
     '''
     def sequential_step(self):
-        new_grid = np.zeros_like(self.current_grid)
-        rows, cols = new_grid.shape
+        rows, cols = self.current_grid.shape
+        grid = self.current_grid
+        scratch = self.scratch_grid
 
-        for row in range(0, rows):
-            for col in range(0, cols):
-                one_count = 0
-                cell_alive = self.current_grid[row, col] == 1 
+        for y in range(rows):
+            y_up = rows - 1 if y == 0 else y - 1
+            y_down = 0 if y == rows - 1 else y + 1
+            
+            for x in range(cols):
+                x_left = cols - 1 if x == 0 else x - 1
+                x_right = 0 if x == cols - 1 else x + 1
 
-                for px in range(-1, 2):
-                    for py in range(-1, 2):
-                        if px == py == 0:
-                            continue
-
-                        updated_row, updated_col = row + px, col + py
-
-                        if (0 <= updated_row < rows) and (0 <= updated_col < cols):    
-                            if self.current_grid[updated_row, updated_col] == 1:
-                                one_count += 1
-                    
-                if (cell_alive and one_count == 2) or one_count == 3:
-                    new_grid[row, col] = 1
+                count = (
+                    grid[y_up, x_left]   + grid[y_up, x]   + grid[y_up, x_right] +
+                    grid[y, x_left]                        + grid[y, x_right]    +
+                    grid[y_down, x_left] + grid[y_down, x] + grid[y_down, x_right]
+                )
+                
+                if count == 3 or (count == 2 and grid[y, x] == 1):
+                    scratch[y, x] = 1
                 else:
-                    new_grid[row, col] = 0
+                    scratch[y, x] = 0
         
-        self.current_grid = new_grid
+        self.current_grid, self.scratch_grid = self.scratch_grid, self.current_grid
         return self.current_grid
 
     '''
         parallel implementation using numba
     '''
     def parallel_step_numba(self):
-        new_grid = np.zeros_like(self.current_grid)
+        update_grid_numba(self.current_grid, self.scratch_grid)
         
-        update_grid_numba(self.current_grid, new_grid)
-        
-        self.current_grid = new_grid
+        self.current_grid, self.scratch_grid = self.scratch_grid, self.current_grid
         return self.current_grid
 
 
