@@ -1,10 +1,9 @@
 # making sure result files don't end up on github :D
-
-# Python
 results/
 *.csv
-venv/
 
+# Python
+venv/
 
 # Rust
 rust/target/

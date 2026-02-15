@@ -19,11 +19,11 @@ pub struct GameOfLife {
     // working with u8 instead of boolean which we started with since it makes computation
     // more efficient and skips unneccesary operations such as if's and conditions and instead
     // uses simple addition
-    grid: Vec<u8>, 
+    pub grid: Vec<u8>, 
     scratch_grid: Vec<u8>,
 
-    height: usize,
-    width: usize,
+    pub height: usize,
+    pub width: usize,
 }
 
 impl GameOfLife {
