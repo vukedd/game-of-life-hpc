@@ -1,3 +1,5 @@
+use rand::{thread_rng, Rng};
+
 pub struct GameOfLife {
     grid: Vec<Vec<bool>>,
     height: usize,
@@ -6,9 +8,12 @@ pub struct GameOfLife {
 
 impl GameOfLife {
     pub fn new(width: usize, height: usize) -> Self {
-        let grid = vec![vec![true; width]; height];
+        let mut rng = thread_rng();
+
+        let grid = (0..height).map(|_| {
+            (0..width).map(|_| rng.gen_bool(0.5)).collect()
+        }).collect();
         
-        println!("{:?}", grid);
         Self { grid, height, width}
     }
 
@@ -42,6 +47,9 @@ impl GameOfLife {
             }
         }
         self.grid = new_grid;
-        println!("{:?}", self.grid)
+    }
+
+    pub fn parallel_step(&mut self) {
+        
     }
 }
