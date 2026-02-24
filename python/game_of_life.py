@@ -108,7 +108,7 @@ def main():
         define the number of steps we want to execute 
     '''
     STEPS = 100
-    GRID_SIZE = 100
+    GRID_SIZE = 300
     TEST_GRID = np.random.randint(0, 2, size=(GRID_SIZE, GRID_SIZE), dtype=np.int8)
     
     ''' 
@@ -126,41 +126,85 @@ def main():
     '''
         sequential test
     '''
-    g1 = GameOfLife(TEST_GRID)
+    # g1 = GameOfLife(TEST_GRID)
 
-    start_time = time.perf_counter()
-    for _ in range(STEPS):
-       g1.sequential_step()
+    # start_time = time.perf_counter()
+    # for _ in range(STEPS):
+    #    g1.sequential_step()
 
-    end_time = time.perf_counter()
-    seq_time = end_time - start_time
+    # end_time = time.perf_counter()
+    # seq_time = end_time - start_time
 
 
     '''
         parallel test
     '''
-    g2 = GameOfLife(TEST_GRID)
+    # g2 = GameOfLife(TEST_GRID)
     
-    set_num_threads(2)
+    # set_num_threads(4)
     '''
         numba takes time to start up so we do that beforehand to get maximum performance
     '''
-    g2.parallel_step_numba()
+    # g2.parallel_step_numba()
 
-    start_time = time.perf_counter()
-    for _ in range(STEPS):
-       g2.parallel_step_numba()
+    # start_time = time.perf_counter()
+    # for _ in range(STEPS):
+    #    g2.parallel_step_numba()
 
-    end_time = time.perf_counter()
-    par_time = end_time - start_time
+    # end_time = time.perf_counter()
+    # par_time = end_time - start_time
 
 
     '''
         show execution time difference
     '''
-    print("-" * 30)
-    print(f"Sequential: {seq_time:.4f}s | Parallel: {par_time:.4f}s")
-    print("-" * 30)
+    # print("-" * 30)
+    # print(f"Execution time: {par_time:.4f}s")
+
+    # print(f"Sequential: {seq_time:.4f}s | Parallel: {par_time:.4f}s")
+    # print("-" * 30)
+
+    # hard scaling
+    #
+    # num_threads = [1, 2, 3, 4]
+    # for thread_no in num_threads:
+    #     set_num_threads(thread_no)
+
+    #     for i in range(0, 30):
+    #         g = GameOfLife(TEST_GRID)
+
+    #         g.parallel_step_numba()
+
+    #         start_time = time.perf_counter()
+    #         for _ in range(0, STEPS):
+    #             g.parallel_step_numba()
+            
+    #         end_time = time.perf_counter()
+  
+    #         exec_time = end_time - start_time
+
+    #         print(f"Duration: {exec_time}, Thread count: {thread_no}, Iteration count: {i + 1}", )
+
+    # weak scaling
+    #
+    num_threads = [1, 2, 3, 4]
+    for thread_no in num_threads:
+            set_num_threads(thread_no)
+
+            TEST_GRID = np.random.randint(0, 2, size=(GRID_SIZE, GRID_SIZE * thread_no), dtype=np.int8)
+            g = GameOfLife(TEST_GRID)
+            for i in range(0, 30):
+                g.parallel_step_numba()
+
+                start_time = time.perf_counter()
+                for _ in range(0, STEPS):
+                    g.parallel_step_numba()
+                
+                end_time = time.perf_counter()
+    
+                exec_time = end_time - start_time
+
+                print(f"Duration: {exec_time}, Thread count: {thread_no}, Iteration count: {i + 1}, Grid dimensions: {GRID_SIZE}x{GRID_SIZE * thread_no}", )
 
 
 '''

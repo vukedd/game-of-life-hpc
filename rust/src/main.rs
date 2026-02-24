@@ -1,52 +1,101 @@
 mod game_of_life;
 
 use chrono::Local;
-use std::fs;
-use std::io::{BufWriter, Write};
-use std::path::Path;
+use core::num;
+use std::{fs, io::{BufWriter, Write}, path::{Path, PathBuf}, time::Instant};
 use game_of_life::GameOfLife;
-use std::path::PathBuf;
-use rayon::prelude::*;
+use rayon::{ThreadPoolBuilder, prelude::*};
 use plotters::prelude::*;
-// use std::time::Instant;
 
-const GRID_WIDTH: usize = 50;
-const GRID_HEIGHT: usize = 50;
+const GRID_WIDTH: usize = 300;
+const GRID_HEIGHT: usize = 300;
 const STEPS: usize = 100;
 
 fn main() -> Result<(), Box<dyn std::error::Error>>  {
     rayon::ThreadPoolBuilder::new()
-        .num_threads(4)
+        .num_threads(1)
         .build_global()
         .unwrap();
 
     let initial_grid = GameOfLife::new(GRID_WIDTH, GRID_HEIGHT);
 
-    // let mut game_seq: GameOfLife = initial_grid.clone();
+    let mut game_seq: GameOfLife = initial_grid.clone();
 
     let results_path = create_results_dir()?;
     println!("Saving results to: {}", results_path);
 
-    // let start: Instant = Instant::now();
-    // for _ in 0..STEPS {
-    //     game_seq.sequential_step();
-    // }
-    // let duration = start.elapsed();
-    // println!("Sequential: {:?}", duration);
+    let start: Instant = Instant::now();
+    for _ in 0..STEPS {
+        game_seq.sequential_step();
+    }
+    let duration = start.elapsed();
+    println!("Sequential: {:?}", duration);
 
 
     let mut game_par = initial_grid.clone();
     save_grid(&game_par.grid, game_par.width, &results_path, 0)?;
 
-    // let start = Instant::now();
+    let start = Instant::now();
     for i in 0..STEPS {
         game_par.parallel_step();
-        save_grid(&game_par.grid, game_par.width, &results_path, i + 1)?;
+           save_grid(&game_par.grid, game_par.width, &results_path, i + 1)?;
     }
+    let duration = start.elapsed();
+    println!("Parallel: {:?}", duration);
 
     visualize_results(&results_path, GRID_WIDTH, GRID_HEIGHT)?;
-    // let duration = start.elapsed();
-    // println!("Parallel: {:?}", duration);
+
+    //hard scaling
+    //
+    // let num_threads = [1, 2, 3, 4];
+    // for thread_count in num_threads {
+    //     let pool = ThreadPoolBuilder::new()
+    //             .num_threads(thread_count)
+    //             .build()
+    //             .expect("Failed to create thread pool");
+
+    //     pool.install(|| {
+    //         for i in 0..30 {
+
+    //         let mut game_par = initial_grid.clone(); 
+    //         let start = Instant::now();
+    //         for _ in 0..STEPS {
+    //             game_par.parallel_step();
+    //             // save_grid(&game_par.grid, game_par.width, &results_path, i + 1)?;
+    //         }
+    //         let duration: std::time::Duration = start.elapsed();
+    //         println!("Duration: {:?}, Thread count: {:?}, Iteration count: {:?}", duration, thread_count, i + 1);
+
+    //     }
+    //     });
+        
+    // }
+
+    // weak scaling
+    //
+    // let num_threads = [1, 2, 3, 4];
+    // for thread_count in num_threads {
+    //     let pool = ThreadPoolBuilder::new()
+    //             .num_threads(thread_count)
+    //             .build()
+    //             .expect("Failed to create thread pool");
+
+    //     let mut game_par =  GameOfLife::new(GRID_WIDTH, GRID_HEIGHT * thread_count); 
+    //     pool.install(|| {
+    //         for i in 0..30 {
+
+    //         let start = Instant::now();
+    //         for _ in 0..STEPS {
+    //             game_par.parallel_step();
+    //             // save_grid(&game_par.grid, game_par.width, &results_path, i + 1)?;
+    //         }
+    //         let duration: std::time::Duration = start.elapsed();
+    //         println!("Duration: {:?}, Thread count: {:?}, Iteration count: {:?}, grid dimensions: {:?}x{:?}", duration, thread_count, i + 1, GRID_WIDTH, GRID_HEIGHT * thread_count);
+
+    //     }
+    //     });
+        
+    // }
 
     Ok(())
 }
